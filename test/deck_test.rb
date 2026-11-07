@@ -18,6 +18,33 @@ class DeckTest < Minitest::Test
     assert_includes slides[0][:html], 'class="slide cover"'
   end
 
+  def test_title_only_slides
+    slides = deck("# Cover\n\n## Only\n\n## Body\n\ntext\n").slides
+    assert_equal [true, true, false], slides.map { _1[:html].include?("title-only") }
+  end
+
+  def test_cover_with_subtitle_is_not_title_only
+    refute_includes html("# Cover\n\nsubtitle\n"), "title-only"
+  end
+
+  def test_title_only_ignores_notes_background_and_style
+    assert_includes html("## A\n\n<!-- note -->\n\n![bg](a.png)\n\n<style scoped>h2 { color: red; }</style>\n"), "title-only"
+  end
+
+  def test_slides_with_content_are_not_title_only
+    ["```ruby\nputs 1\n```", "```web\nhttps://a\n```", "![logo](a.png)", "- a", "### sub"].each do |body|
+      refute_includes html("## A\n\n#{body}\n"), "title-only", body
+    end
+  end
+
+  def test_heading_on_continuation_slide_is_not_title_only
+    refute_includes html("## A\n\nx\n\n---\n\n### B\n", 1), "title-only"
+  end
+
+  def test_left_class_keeps_title_only
+    assert_includes html("## A\n\n<!-- _class: left -->\n"), 'class="slide left title-only"'
+  end
+
   def test_h3_does_not_split
     assert_equal 1, deck("## A\n\n### B\n\ntext\n").slides.length
   end

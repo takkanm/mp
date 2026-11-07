@@ -32,6 +32,8 @@ Markdown や CSS を保存すると自動で再読み込みします。このと
 | `## 見出し` | 通常のスライド 1 枚。見出しがページタイトルになる |
 | `---` | タイトルなしの続きスライド |
 
+見出しだけで本文がないスライドは、タイトルを画面の中央に置きます。左に寄せるには `<!-- _class: left -->` を書きます。
+
 ## ターミナルの埋め込み
 
 ````markdown
@@ -88,7 +90,7 @@ style: |
 <!-- _backgroundColor: black --> このスライドだけに適用(先頭に _)
 ```
 
-使えるディレクティブは `paginate` `header` `footer` `class` `color` `backgroundColor` `backgroundImage` `backgroundPosition` `backgroundRepeat` `backgroundSize` です。クラスには `lead`(中央寄せ)、`invert`(配色反転)、`columns`(2 列)があります。
+使えるディレクティブは `paginate` `header` `footer` `class` `color` `backgroundColor` `backgroundImage` `backgroundPosition` `backgroundRepeat` `backgroundSize` です。クラスには `lead`(中央寄せ)、`left`(左寄せ)、`invert`(配色反転)、`columns`(2 列)があります。
 
 **画像**
 

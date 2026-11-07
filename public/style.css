@@ -20,6 +20,16 @@ section.slide.active { visibility: visible; }
 section.slide.cover, section.slide.lead { justify-content: center; }
 section.slide.lead { text-align: center; align-items: center; }
 
+/* 見出しだけのスライドは自動で中央に置く */
+section.slide.title-only { justify-content: center; align-items: center; text-align: center; }
+section.slide.title-only > :is(h1, h2) { margin: 0; padding: 0; border: 0; }
+
+/* 左寄せ: <!-- _class: left --> */
+section.slide.left { align-items: stretch; text-align: left; }
+
+/* 中央寄せでも横幅いっぱいを基準に拡大する */
+section.slide > .fit { align-self: stretch; }
+
 /* 見出しの下を 2 列にする: <!-- _class: columns --> */
 section.slide.columns {
   display: grid;
@@ -41,6 +51,7 @@ section.slide > header, section.slide > footer, section.slide > .page-number {
   left: var(--pad);
   right: var(--pad);
   z-index: 2;
+  text-align: left; /* 中央寄せのスライドでも位置を変えない */
   font-size: 18px;
   opacity: .65;
 }

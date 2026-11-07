@@ -142,6 +142,10 @@ begin
   sleep 0.2
   check.call("マウスが出るとシールドが戻る", js.call(shield) == false)
   go_to.call("ありがとうございました")
+  offset = js.call("(() => { const s = document.querySelector('section.active').getBoundingClientRect(); const r = document.createRange(); r.selectNodeContents(document.querySelector('section.active h1')); const h = r.getBoundingClientRect(); return [Math.abs((h.left + h.right - s.left - s.right) / 2), Math.abs((h.top + h.bottom - s.top - s.bottom) / 2)] })()")
+  check.call("タイトルのみのページは中央に置く", offset.all? { _1 < 2 }, offset)
+  left_gap = js.call("(() => { const s = document.querySelector('section.active').getBoundingClientRect(); const r = document.createRange(); r.selectNodeContents(document.querySelector('section.active footer')); return (r.getBoundingClientRect().left - s.left) / s.width })()")
+  check.call("中央のページでもフッターは左", left_gap < 0.1, left_gap)
   shot.call("09_end")
 
   # セキュリティ

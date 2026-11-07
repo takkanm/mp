@@ -43,6 +43,7 @@ module Mp
       document = Kramdown::Document.new(source, KRAMDOWN)
       @source_lines = source.split("\n", -1)
       transform(document.root)
+      @title_only = title_only?(document.root)
       html = scope_styles(restore_tokens(document.to_html))
       html = html.sub(/<h([12])>/, '<h\1 class="fit">') if @chunk.fit
 
@@ -57,6 +58,14 @@ module Mp
       element.children.reject! { |child| background_only?(child) }
       mark_fragments(element) if element.type == :ul
       element.children.each { convert_image(_1) if _1.type == :img }
+    end
+
+    # 背景画像はここまでに取り除かれ、ノートは kramdown に渡していない
+    def title_only?(root)
+      return false if @chunk.kind == :continuation
+
+      content = root.children.reject { _1.type == :blank || (_1.type == :html_element && _1.value == "style") }
+      content.length == 1 && content.first.type == :header
     end
 
     def background_only?(element)
@@ -135,7 +144,8 @@ module Mp
 
     def classes
       kind = { cover: "cover", continuation: "continuation" }[@chunk.kind]
-      ["slide", kind, *Array(@directives["class"]).flat_map { _1.to_s.split }].compact.join(" ")
+      title_only = "title-only" if @title_only
+      ["slide", kind, *Array(@directives["class"]).flat_map { _1.to_s.split }, title_only].compact.join(" ")
     end
 
     def style
