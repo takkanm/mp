@@ -18,6 +18,7 @@ module Mp
   # ランダムトークンを要求し、WebSocket は Origin も検証する。
   class Server
     HOST = "127.0.0.1"
+    CONTENT_HOST = "localhost"
     PUBLIC_DIR = File.expand_path("../../public", __dir__)
     VENDOR_DIR = File.expand_path("../../vendor/assets", __dir__)
     THEME_DIR = File.expand_path("../../themes", __dir__)
@@ -51,6 +52,10 @@ module Mp
     end
 
     def origin = "http://#{HOST}:#{@port}"
+
+    # 埋め込むローカルページの配信元。アプリと別 origin にして、ページの JS が
+    # ターミナルの WebSocket やデッキの API へ触れないようにする
+    def content_origin = "http://#{CONTENT_HOST}:#{@port}"
     def boot_url = "#{origin}/#{@token}/_mp/boot"
     def app_url = "#{origin}/#{@token}/"
     def presenter_url = "#{origin}/#{@token}/presenter"
@@ -78,7 +83,10 @@ module Mp
       prefix = "/#{@token}/"
       return not_found unless path.start_with?(prefix)
 
-      route(path.delete_prefix(prefix), env)
+      relative = path.delete_prefix(prefix)
+      return embedded_page(relative) if env["HTTP_HOST"] == "#{CONTENT_HOST}:#{@port}"
+
+      route(relative, env)
     end
 
     private
@@ -108,7 +116,15 @@ module Mp
     end
 
     def deck_json
-      @deck.to_h.merge(themeCss: theme_css)
+      deck = @deck.to_h
+      embeds = deck[:embeds].transform_values { |embed| embed[:type] == "web" ? embed.merge(src: embed_url(embed[:src])) : embed }
+      deck.merge(embeds: embeds, themeCss: theme_css)
+    end
+
+    def embed_url(src)
+      return src if src.empty? || src.match?(%r{\Ahttps?://}i)
+
+      "#{content_origin}/#{@token}/#{src.sub(%r{\A(\./|/)+}, "")}"
     end
 
     def theme_css
@@ -136,18 +152,26 @@ module Mp
 
     # デッキのあるディレクトリのファイル(画像など)
     def deck_file(relative)
+      full = resolve_deck_path(relative)
+      full ? file(full, sandbox_headers(full)) : not_found
+    end
+
+    # 別 origin で配信するので sandbox は不要。wasm や ES モジュールを普通に読み込める
+    def embedded_page(relative)
+      full = resolve_deck_path(relative.empty? || relative.end_with?("/") ? "#{relative}index.html" : relative)
+      full ? file(full) : not_found
+    end
+
+    def resolve_deck_path(relative)
       relative = Rack::Utils.unescape_path(relative)
-      return not_found if relative.split("/").any? { _1.start_with?(".") }
+      return if relative.split("/").any? { _1.start_with?(".") }
 
       base = File.realpath(@deck.base_dir)
       full = File.expand_path(relative, base)
-      return not_found unless File.file?(full)
-      return not_found unless inside?(base, File.realpath(full))
-
-      file(full, sandbox_headers(full))
+      full if File.file?(full) && inside?(base, File.realpath(full))
     end
 
-    # デッキ配下の HTML はアプリと同一オリジンにせず、PTY の WebSocket へ触れないようにする
+    # アプリの origin で HTML が動くと PTY の WebSocket へ届くので、origin を持たせない
     def sandbox_headers(path)
       return {} unless SANDBOXED_TYPES.include?(mime(path))
 

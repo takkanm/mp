@@ -45,10 +45,13 @@ module Mp
     private
 
     # サイトをまたぐ iframe は別プロセスの子ターゲットになるので、そちらにも同じ設定をする
+    # Worker なども一時停止した状態で届く。Fetch を持たないので iframe だけを設定し、
+    # どのターゲットも必ず再開する(再開しないと Worker が止まったままになる)
     def prepare_child(params)
       session = params["sessionId"]
-      watch(session)
-      @cdp.call("Runtime.runIfWaitingForDebugger", {}, session_id: session)
+      watch(session) if params.dig("targetInfo", "type") == "iframe"
+    ensure
+      @cdp.cast("Runtime.runIfWaitingForDebugger", {}, session_id: session)
     end
 
     def watch(session)

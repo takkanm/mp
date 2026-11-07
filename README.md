@@ -59,7 +59,7 @@ https://example.com
 ```
 ````
 
-本文には `http(s)` の URL か、デッキからの相対パス(`./page.html`)を書きます。`X-Frame-Options` などで埋め込みを拒否するサイトも表示できます。
+本文には `http(s)` の URL か、デッキからの相対パス(`./page.html`)を書きます。`X-Frame-Options` などで埋め込みを拒否するサイトも表示できます。JavaScript、WebAssembly、Web Worker を使うページも動きます。ディレクトリを指すときは `./app/` のように末尾に `/` を付けると `index.html` を開きます。
 
 | 属性 | 説明 |
 | --- | --- |
@@ -181,7 +181,7 @@ Ruby のローカルサーバ(puma)がスライドを配信し、Chrome をア�
 - サーバは `127.0.0.1` のみで待ち受け、全パスにランダムトークンを要求する
 - WebSocket は Origin を検証する
 - CSP により、デッキ内の HTML に書いたスクリプトは実行されない
-- デッキ配下の HTML は sandbox で配信し、ターミナルへ接続できない
+- 埋め込むローカルページは別 origin(`localhost`)で配信し、ターミナルへ接続できない
 - コマンドは Enter を押すまで実行されない
 
 それでも、Enter を押せば書かれたコマンドは実行されます。**他人が作ったデッキは内容を確認してから発表してください。**
@@ -190,6 +190,7 @@ Ruby のローカルサーバ(puma)がスライドを配信し、Chrome をア�
 
 ## 制限
 
+- `SharedArrayBuffer` が必要なページ(Cross-Origin Isolation が前提のもの)は動きません
 - 埋め込みページは iframe なので、サードパーティ Cookie の制限によりログイン状態を維持できないサイトがあります
 - `:smile:` 形式の絵文字ショートコードは未対応です(Unicode の絵文字は使えます)
 - 発表者ビューから入力できるのは `Enter` だけです。台本にないコマンドを打つときは、聴衆画面のターミナルをクリックしてください
@@ -200,9 +201,10 @@ Ruby のローカルサーバ(puma)がスライドを配信し、Chrome をア�
 bundle exec rake test
 bundle exec ruby test/e2e.rb
 bundle exec ruby test/presenter_e2e.rb
+bundle exec ruby test/embed_e2e.rb
 ```
 
-`test/e2e.rb` と `test/presenter_e2e.rb` はヘッドレス Chrome で実際に動かして確認します。Web 埋め込みの確認にはネットワーク接続が必要です。
+`test/*_e2e.rb` と `test/e2e.rb` はヘッドレス Chrome で実際に動かして確認します。Web 埋め込みの確認にはネットワーク接続が必要です。
 
 `vendor/assets` には xterm.js と KaTeX を同梱しています。実行に Node.js は不要です。
 
