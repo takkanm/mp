@@ -44,6 +44,7 @@ module Mp
       @source_lines = source.split("\n", -1)
       transform(document.root)
       @title_only = title_only?(document.root)
+      arrange_columns(document.root) if directive_classes.include?("columns")
       html = scope_styles(restore_tokens(document.to_html))
       html = html.sub(/<h([12])>/, '<h\1 class="fit">') if @chunk.fit
 
@@ -57,16 +58,32 @@ module Mp
       element.children.each { transform(_1) }
       element.children.reject! { |child| background_only?(child) }
       mark_fragments(element) if element.type == :ul
-      element.children.each { convert_image(_1) if _1.type == :img }
+      element.children.each { convert_image(_1, element) if _1.type == :img }
     end
 
     # 背景画像はここまでに取り除かれ、ノートは kramdown に渡していない
     def title_only?(root)
       return false if @chunk.kind == :continuation
 
-      content = root.children.reject { _1.type == :blank || (_1.type == :html_element && _1.value == "style") }
+      content = root.children.reject { _1.type == :blank || style_element?(_1) }
       content.length == 1 && content.first.type == :header
     end
+
+    def style_element?(element)
+      element.type == :html_element && element.value == "style"
+    end
+
+    # 最後の要素を右の列、それ以外を左の列に積む
+    def arrange_columns(root)
+      children = root.children.reject { _1.type == :blank }
+      heading = children.first&.type == :header && children.first.options[:level] <= 2 ? [children.shift] : []
+      styles, blocks = children.partition { style_element?(_1) }
+      columns = blocks.length > 1 ? [blocks[0...-1], blocks.last(1)] : [blocks]
+      wrapped = columns.flat_map { |column| [column_tag(%(<div class="column">)), *column, column_tag("</div>")] }
+      root.children.replace(heading + styles + wrapped)
+    end
+
+    def column_tag(html) = Kramdown::Element.new(:raw, html, nil, category: :block)
 
     def background_only?(element)
       return false unless element.type == :p
@@ -106,7 +123,7 @@ module Mp
       end
     end
 
-    def convert_image(image)
+    def convert_image(image, parent)
       return if keywords(image).include?("bg") # 親の段落を処理するときに背景へ移す
 
       styles = []
@@ -115,6 +132,7 @@ module Mp
         case name
         when "w", "width" then styles << "width:#{css_length(value)}"
         when "h", "height" then styles << "height:#{css_length(value)}"
+        when "fit" then parent.attr["class"] = "image-fit" # 段落ごと本文の残りの領域を使う
         when *FILTERS then (@image_filters ||= []) << "#{name}(#{value || FILTER_DEFAULTS[name]})"
         else next false
         end
@@ -145,7 +163,11 @@ module Mp
     def classes
       kind = { cover: "cover", continuation: "continuation" }[@chunk.kind]
       title_only = "title-only" if @title_only
-      ["slide", kind, *Array(@directives["class"]).flat_map { _1.to_s.split }, title_only].compact.join(" ")
+      ["slide", kind, *directive_classes, title_only].compact.join(" ")
+    end
+
+    def directive_classes
+      Array(@directives["class"]).flat_map { _1.to_s.split }
     end
 
     def style

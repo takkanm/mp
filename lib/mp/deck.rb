@@ -188,8 +188,11 @@ module Mp
       id = "e#{@embeds.length + 1}"
       style = %w[width height].filter_map { |key|
         value = attrs[key]
-        "#{key}:#{value}#{"px" if value.match?(/\A[\d.]+\z/)};flex:none" if value&.match?(CSS_LENGTH)
-      }.join(";")
+        "#{key}:#{value}#{"px" if value.match?(/\A[\d.]+\z/)}" if value&.match?(CSS_LENGTH)
+      }
+      # 高さを固定するときだけ伸縮を止める。幅だけなら高さは残りの領域を使う
+      style << "flex:none" if style.any? { _1.start_with?("height") }
+      style = style.join(";")
       @embeds[id] = type == "web" ? web_embed(attrs, inner) : terminal_embed(attrs, inner)
       token(%(<div class="embed embed-#{type}" data-embed="#{id}" style="#{CGI.escapeHTML(style)}"></div>))
     end

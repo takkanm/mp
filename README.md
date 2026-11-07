@@ -68,7 +68,22 @@ https://example.com
 
 クリックするとページを操作でき、マウスが外に出るとスライドのキー操作に戻ります。
 
-ターミナルとページを横に並べるには `<!-- _class: columns -->` を使います。
+画面を左右に分けるには `<!-- _class: columns -->` を使います。本文の最後の要素が右の列に、それ以外が左の列に入ります。
+
+````markdown
+## タイトル
+
+<!-- _class: columns -->
+
+説明の文章
+
+- 箇条書き
+
+```terminal
+```
+````
+
+ターミナルと Web を 1 つずつ書けば左右に並びます。上下に分けるには `height=50%` を指定します。
 
 ## Marp 互換の記法
 
@@ -90,12 +105,13 @@ style: |
 <!-- _backgroundColor: black --> このスライドだけに適用(先頭に _)
 ```
 
-使えるディレクティブは `paginate` `header` `footer` `class` `color` `backgroundColor` `backgroundImage` `backgroundPosition` `backgroundRepeat` `backgroundSize` です。クラスには `lead`(中央寄せ)、`left`(左寄せ)、`invert`(配色反転)、`columns`(2 列)があります。
+使えるディレクティブは `paginate` `header` `footer` `class` `color` `backgroundColor` `backgroundImage` `backgroundPosition` `backgroundRepeat` `backgroundSize` です。クラスには `lead`(中央寄せ)、`left`(左寄せ)、`right`(本文だけ右寄せ)、`invert`(配色反転)、`columns`(2 列)があります。
 
 **画像**
 
 ```markdown
 ![w:300 h:200](a.png)            サイズ指定
+![fit](a.png)                    本文の残りの領域に画像全体を収める
 ![blur:5px grayscale](a.png)     フィルタ
 ![bg](a.png)                     背景(複数並べると分割)
 ![bg contain](a.png)             cover / contain / fit / auto / 50%

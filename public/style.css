@@ -27,6 +27,14 @@ section.slide.title-only > :is(h1, h2) { margin: 0; padding: 0; border: 0; }
 /* 左寄せ: <!-- _class: left --> */
 section.slide.left { align-items: stretch; text-align: left; }
 
+/* 本文の右寄せ: <!-- _class: right -->。見出し、コード、埋め込みは動かさない */
+:is(section.slide.right, section.slide.right > .column) > :not(h1, h2, .bg-layer, header, footer, .page-number, style, pre, .embed, .highlighter-rouge, .column) {
+  align-self: stretch;
+  text-align: right;
+}
+:is(section.slide.right, section.slide.right > .column) > :is(ul, ol) { padding-left: 0; list-style-position: inside; }
+:is(section.slide.right, section.slide.right > .column) > blockquote { padding: 0 .7em 0 0; border-left: 0; border-right: 6px solid var(--accent, currentColor); }
+
 /* 中央寄せでも横幅いっぱいを基準に拡大する */
 section.slide > .fit { align-self: stretch; }
 
@@ -38,6 +46,22 @@ section.slide.columns {
   gap: 0 24px;
 }
 section.slide.columns > h2 { grid-column: 1 / -1; }
+section.slide.columns > .column { grid-row: 2; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+
+/* ![fit](a.png): 本文の残りの領域に画像全体を収める */
+:is(section.slide, .column) > p.image-fit {
+  display: flex;
+  flex: 1;
+  align-self: stretch;
+  justify-content: center;
+  gap: 16px;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+}
+:is(section.slide, .column) > p.image-fit > img { flex: 1; min-width: 0; width: 100%; height: 100%; object-fit: contain; }
+:is(section.slide, .column) > p.image-fit > br { display: none; }
+:is(section.slide, .column) > p.image-fit:has(+ :not(footer, .page-number)) { margin-bottom: .4em; }
 
 .fragment { visibility: hidden; }
 .fragment.shown { visibility: inherit; }
@@ -62,6 +86,7 @@ section.slide > .page-number { bottom: 20px; left: auto; right: 32px; }
 .embed {
   position: relative;
   flex: 1;
+  align-self: stretch;
   min-height: 0;
   min-width: 0;
   margin: 12px 0 24px;

@@ -45,6 +45,53 @@ class DeckTest < Minitest::Test
     assert_includes html("## A\n\n<!-- _class: left -->\n"), 'class="slide left title-only"'
   end
 
+  def columns_of(body)
+    out = html("## A\n\n<!-- _class: columns -->\n\n#{body}\n")
+    out.split('<div class="column">').drop(1)
+  end
+
+  def test_columns_put_last_block_on_the_right
+    left, right = columns_of("text\n\n- item\n\n```terminal\n```")
+    assert_includes left, "text"
+    assert_includes left, "<ul>"
+    assert_includes right, 'data-embed="e1"'
+    refute_includes right, "text"
+  end
+
+  def test_columns_with_two_blocks
+    left, right = columns_of("```terminal\n```\n\n```web\nhttps://a\n```")
+    assert_includes left, "embed-terminal"
+    assert_includes right, "embed-web"
+  end
+
+  def test_columns_keep_heading_outside
+    out = html("## A\n\n<!-- _class: columns -->\n\nx\n\ny\n")
+    assert_operator out.index("<h2>"), :<, out.index('<div class="column">')
+    assert_equal 2, out.scan('<div class="column">').length
+  end
+
+  def test_columns_with_single_block
+    assert_equal 1, columns_of("only").length
+  end
+
+  def test_columns_on_continuation_slide
+    assert_equal 2, html("## A\n\n<!-- class: columns -->\n\n---\n\nx\n\ny\n", 1).scan('<div class="column">').length
+  end
+
+  def test_columns_keep_scoped_style_out_of_columns
+    assert_equal 2, columns_of("<style scoped>p { color: red; }</style>\n\nx\n\ny").length
+    refute_includes columns_of("<style scoped>p { color: red; }</style>\n\nx\n\ny").last, "@scope"
+  end
+
+  def test_width_only_embed_keeps_flexible_height
+    style = deck("```web width=50%\nhttps://a\n```\n").slides[0][:html][/data-embed="e1" style="([^"]*)"/, 1]
+    assert_equal "width:50%", style
+  end
+
+  def test_height_embed_is_fixed
+    assert_includes deck("```web width=50% height=400\nhttps://a\n```\n").slides[0][:html], "width:50%;height:400px;flex:none"
+  end
+
   def test_h3_does_not_split
     assert_equal 1, deck("## A\n\n### B\n\ntext\n").slides.length
   end
@@ -142,6 +189,23 @@ class DeckTest < Minitest::Test
     out = html("![w:200 h:100 logo](a.png)\n")
     assert_includes out, "width:200px;height:100px"
     assert_includes out, 'alt="logo"'
+  end
+
+  def test_fit_image
+    out = html("## A\n\n![fit 図](a.png)\n")
+    assert_includes out, '<p class="image-fit">'
+    assert_includes out, 'alt="図"'
+    refute_includes out, 'class="fit"', "見出し用の fit と混ざらない"
+  end
+
+  def test_fit_keyword_on_background_stays_background
+    out = html("## A\n\n![bg fit](a.png)\n")
+    assert_includes out, "background-size:contain"
+    refute_includes out, "image-fit"
+  end
+
+  def test_fit_image_is_not_title_only
+    refute_includes html("## A\n\n![fit](a.png)\n"), "title-only"
   end
 
   def test_background_image
