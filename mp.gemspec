@@ -7,9 +7,11 @@ Gem::Specification.new do |spec|
   spec.version = Mp::VERSION
   spec.summary = "Markdown を全画面プレゼンテーションにするツール(ターミナル / Web 埋め込み対応)"
   spec.authors = ["takkanm"]
+  spec.homepage = "https://github.com/takkanm/mp"
   spec.license = "MIT"
   spec.required_ruby_version = ">= 3.3"
   spec.metadata["allowed_push_host"] = "https://rubygems.org"
+  spec.metadata["source_code_uri"] = spec.homepage
   spec.files = Dir["lib/**/*", "exe/*", "themes/*", "public/**/*", "vendor/assets/**/*", "README.md", "LICENSE.txt"]
   spec.bindir = "exe"
   spec.executables = ["mp"]
