@@ -1,0 +1,27 @@
+/* mp default theme */
+section {
+  background: #fff;
+  color: #1f2430;
+  font: 30px/1.55 "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", system-ui, sans-serif;
+  --accent: #2563c9;
+  --muted: #f1f3f7;
+}
+section h1 { font-size: 68px; line-height: 1.2; margin: 0 0 .3em; }
+section h2 { font-size: 44px; line-height: 1.25; margin: 0 0 .5em; padding-bottom: .2em; border-bottom: 3px solid var(--accent); }
+section h3 { font-size: 34px; margin: .5em 0 .3em; }
+section p, section ul, section ol, section blockquote, section table { margin: 0 0 .55em; }
+section ul, section ol { padding-left: 1.2em; }
+section li { margin: .15em 0; }
+section a { color: var(--accent); }
+section strong { color: var(--accent); }
+section img { max-width: 100%; }
+section code { font: .86em Menlo, monospace; background: var(--muted); padding: .1em .3em; border-radius: 5px; }
+section pre { background: var(--muted); padding: 18px 22px; border-radius: 10px; overflow: hidden; line-height: 1.4; }
+section pre code { background: none; padding: 0; font-size: 24px; }
+section blockquote { border-left: 6px solid var(--accent); padding-left: .7em; color: #5a6272; }
+section table { border-collapse: collapse; }
+section th, section td { border: 1px solid #d5dae3; padding: .3em .7em; }
+section th { background: var(--muted); }
+
+section.cover h1 { color: var(--accent); }
+section.invert { background: #161a22; color: #eef0f4; --muted: #262c38; }

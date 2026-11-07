@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <title>mp</title>
+  <link rel="stylesheet" href="_mp/vendor/xterm/xterm.css">
+  <link rel="stylesheet" href="_mp/vendor/katex/katex.min.css">
+  <link rel="stylesheet" href="_mp/style.css">
+  <style id="theme"></style>
+  <style id="deck-style"></style>
+</head>
+<body>
+  <div id="stage"></div>
+  <aside id="notes" hidden></aside>
+  <aside id="help" hidden>
+    <h3>キー操作</h3>
+    <dl>
+      <dt>→ ↓ Space PageDown</dt><dd>次へ</dd>
+      <dt>← ↑ PageUp</dt><dd>前へ</dd>
+      <dt>Home / End</dt><dd>最初 / 最後</dd>
+      <dt>数字 + Enter</dt><dd>そのページへ</dd>
+      <dt>t またはクリック</dt><dd>ターミナルを操作</dd>
+      <dt>⌘. </dt><dd>ターミナルから抜ける</dd>
+      <dt>⌘← / ⌘→</dt><dd>ターミナル操作中でもページ移動</dd>
+      <dt>f</dt><dd>全画面の切り替え</dd>
+      <dt>n</dt><dd>発表者ノート</dd>
+      <dt>p</dt><dd>発表者ビュー</dd>
+      <dt>q</dt><dd>終了</dd>
+    </dl>
+  </aside>
+  <script src="_mp/vendor/xterm/xterm.js"></script>
+  <script src="_mp/vendor/xterm/addon-fit.js"></script>
+  <script src="_mp/vendor/katex/katex.min.js"></script>
+  <script src="_mp/slides.js"></script>
+  <script src="_mp/app.js"></script>
+</body>
+</html>
