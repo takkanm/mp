@@ -10,6 +10,12 @@ let slides = [];
 let current = 0;
 let terminals = new Map(); // embed id -> { term, socket, fit, host, slot, font }
 let scale = 1;
+let startedAt = null;
+const slideSpent = new Map(); // ページ番号 -> そのページで使った時間(ミリ秒)。戻っても続きから数える
+let enteredAt = Date.now();
+const timer = document.createElement("div");
+timer.id = "timer";
+timer.innerHTML = `<span class="timer-pages"></span><span class="timer-slide"><small>ページ</small><b></b></span><span class="timer-total"><small>全体</small><b></b></span>`;
 let activeTerminal = null;
 let digits = "";
 
@@ -25,8 +31,37 @@ async function loadDeck() {
 
   deck = await MpSlides.load(stage);
   slides = [...stage.querySelectorAll(":scope > section.slide")];
+  startedAt = deck.startedAt;
+  stage.append(timer); // スライドと一緒に拡大縮小させる
+  stage.classList.toggle("timed", !!deck.duration);
+  renderTimer();
   layout();
   show(Math.min(Number(location.hash.slice(1) || 1) - 1, slides.length - 1), { fragments: "none" });
+}
+
+function spentOnCurrent(now = Date.now()) {
+  return (slideSpent.get(current) ?? 0) + (now - enteredAt);
+}
+
+function renderTimer() {
+  timer.hidden = !deck?.duration || !slides.length;
+  if (timer.hidden) return;
+  const total = MpSlides.remaining(deck, startedAt);
+  const budget = MpSlides.slideBudget(deck, slides.length);
+  const slide = MpSlides.slideRemaining(budget, spentOnCurrent());
+  timer.querySelector(".timer-pages").textContent = `${current + 1} / ${slides.length}`;
+  timer.querySelector(".timer-slide b").textContent = MpSlides.formatTime(slide);
+  timer.querySelector(".timer-slide").dataset.state = MpSlides.slideState(budget, slide);
+  timer.querySelector(".timer-total b").textContent = MpSlides.formatTime(total);
+  timer.querySelector(".timer-total").dataset.state = MpSlides.timerState(deck, total);
+}
+
+function resetTimer(at) {
+  startedAt = at;
+  slideSpent.clear();
+  enteredAt = Date.now();
+  renderTimer();
+  sendState();
 }
 
 function layout() {
@@ -64,6 +99,10 @@ function show(index, { fragments }) {
   releaseFocus();
   slides[current]?.classList.remove("active");
   slides[current]?.querySelectorAll("iframe").forEach((frame) => frame.blur());
+  if (index !== current) {
+    slideSpent.set(current, spentOnCurrent());
+    enteredAt = Date.now();
+  }
   current = index;
   const slide = slides[current];
   slide.classList.add("active");
@@ -71,6 +110,7 @@ function show(index, { fragments }) {
   history.replaceState(null, "", `#${current + 1}`);
   mountEmbeds(slide);
   renderNotes();
+  renderTimer();
   sendState();
 }
 
@@ -81,6 +121,7 @@ function sendState() {
   const terminal = currentTerminal();
   events.send(JSON.stringify({
     type: "state", slide: current, step, script: terminal?.script() ?? null, ready: terminal?.ready() ?? false,
+    slideSpent: spentOnCurrent(), sentAt: Date.now(), // 発表者ビューはここから経過を数える
   }));
 }
 
@@ -300,7 +341,9 @@ events.onmessage = (event) => {
   const message = JSON.parse(event.data);
   if (message.type === "reload") loadDeck();
   else if (message.type === "hello") sendState();
+  else if (message.type === "timer") resetTimer(message.startedAt);
   else if (message.type === "command") commands[message.cmd]?.(message);
 };
 
+setInterval(renderTimer, 250);
 loadDeck();

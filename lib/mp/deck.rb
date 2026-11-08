@@ -15,7 +15,7 @@ module Mp
   # kramdown に渡す前に行単位で走査する。kramdown は info 文字列に属性を持つ
   # フェンスを認識せず、`$x$` も扱えないため、独自記法はここでトークンに置換する。
   class Deck
-    GLOBAL_DIRECTIVES = %w[theme size style title].freeze
+    GLOBAL_DIRECTIVES = %w[theme size style title duration].freeze
     LOCAL_DIRECTIVES = %w[
       paginate header footer class color
       backgroundColor backgroundImage backgroundPosition backgroundRepeat backgroundSize
@@ -48,6 +48,17 @@ module Mp
       SIZES.fetch(@globals["size"].to_s, SIZES["16:9"])
     end
 
+    # トークの想定時間(秒)。数値は分として扱い、"20:00" "90s" "20m" も受け付ける
+    def duration
+      seconds = case (value = @globals["duration"])
+                when Numeric then value * 60
+                when /\A\s*(\d+):([0-5]\d)\s*\z/ then (Regexp.last_match(1).to_i * 60) + Regexp.last_match(2).to_i
+                when /\A\s*(\d+(?:\.\d+)?)\s*(?:m|min|分)?\s*\z/ then Regexp.last_match(1).to_f * 60
+                when /\A\s*(\d+)\s*(?:s|sec|秒)\s*\z/ then Regexp.last_match(1).to_i
+                end
+      seconds.round if seconds&.positive?
+    end
+
     def title
       @globals["title"] || @slides.find { _1[:kind] == :cover }&.fetch(:title) || "mp"
     end
@@ -57,6 +68,7 @@ module Mp
       {
         title: title,
         size: size,
+        duration: duration,
         style: @globals["style"].to_s,
         slides: @slides.map { _1.slice(:html, :notes) },
         embeds: @embeds.transform_values { _1.except(:cwd) }
@@ -73,9 +85,9 @@ module Mp
       [match.post_match, front.is_a?(Hash) ? front : {}]
     end
 
-    # YAML 1.1 では `4:3` が 60 進数の 243 になるので、文字列のまま読ませる
+    # YAML 1.1 では `4:3` や `20:00` が 60 進数の数値になるので、文字列のまま読ませる
     def load_yaml(text)
-      YAML.safe_load(text.gsub(/^(\s*_?size:\s*)(\d+:\d+)\s*$/, '\1"\2"'))
+      YAML.safe_load(text.gsub(/^(\s*_?(?:size|duration):\s*)(\d+:\d+)\s*(#.*)?$/, '\1"\2"'))
     end
 
     def scan(body)

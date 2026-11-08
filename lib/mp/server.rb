@@ -118,8 +118,11 @@ module Mp
     def deck_json
       deck = @deck.to_h
       embeds = deck[:embeds].transform_values { |embed| embed[:type] == "web" ? embed.merge(src: embed_url(embed[:src])) : embed }
-      deck.merge(embeds: embeds, themeCss: theme_css)
+      @started_at ||= Time.now # 最初にスライドを表示した時刻からタイマーを始める
+      deck.merge(embeds: embeds, themeCss: theme_css, startedAt: timer_start)
     end
+
+    def timer_start = (@started_at.to_f * 1000).round
 
     def embed_url(src)
       return src if src.empty? || src.match?(%r{\Ahttps?://}i)
@@ -211,6 +214,9 @@ module Mp
       case JSON.parse(message)["type"]
       when "quit" then @on_quit&.call
       when "open-presenter" then @on_open_presenter&.call
+      when "timer-reset"
+        @started_at = Time.now
+        broadcast(JSON.generate(type: "timer", startedAt: timer_start))
       when "frame" then @on_frame_request&.call
       else broadcast(message, except: socket)
       end

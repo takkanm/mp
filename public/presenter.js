@@ -6,7 +6,7 @@ const FRAME_INTERVAL = 250;
 let deck = null;
 let state = { slide: 0, step: 0, script: null, ready: false };
 let digits = "";
-let startedAt = Date.now();
+let startedAt = Date.now(); // サーバの開始時刻を受け取るまでの仮の値
 let noteSize = 26;
 let mirrorRunning = false;
 let mirrorSlide = null;
@@ -19,6 +19,7 @@ const command = (cmd, args = {}) => send({ type: "command", cmd, ...args });
 
 async function loadDeck() {
   deck = await MpSlides.load($("current"), [$("current"), $("next")]);
+  startedAt = deck.startedAt;
   document.title = `発表者ビュー - ${deck.title}`;
   for (const stage of [$("current"), $("next")]) {
     stage.querySelectorAll(".embed").forEach(describeEmbed);
@@ -110,10 +111,19 @@ function onFrame(data) {
 }
 
 function tick() {
-  const seconds = Math.floor((Date.now() - startedAt) / 1000);
-  const pad = (n) => String(n).padStart(2, "0");
-  $("elapsed").textContent = `${seconds >= 3600 ? `${Math.floor(seconds / 3600)}:` : ""}${pad(Math.floor(seconds / 60) % 60)}:${pad(seconds % 60)}`;
+  $("elapsed").textContent = MpSlides.formatTime(Math.floor((Date.now() - startedAt) / 1000));
   $("clock").textContent = new Date().toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" });
+  $("remaining").hidden = $("slide-remaining").hidden = !deck?.duration;
+  if (!deck?.duration) return;
+  const remaining = MpSlides.remaining(deck, startedAt);
+  $("remaining").textContent = remaining < 0 ? `超過 ${MpSlides.formatTime(-remaining)}` : `残り ${MpSlides.formatTime(remaining)}`;
+  $("remaining").dataset.state = MpSlides.timerState(deck, remaining);
+
+  // 聴衆画面が送った使用時間に、送ってからの経過を足す
+  const budget = MpSlides.slideBudget(deck, deck.slides.length);
+  const slide = MpSlides.slideRemaining(budget, (state.slideSpent ?? 0) + (Date.now() - (state.sentAt ?? Date.now())));
+  $("slide-remaining").textContent = `このページ ${slide < 0 ? `超過 ${MpSlides.formatTime(-slide)}` : MpSlides.formatTime(slide)}`;
+  $("slide-remaining").dataset.state = MpSlides.slideState(budget, slide);
 }
 
 function setNoteSize(size) {
@@ -128,7 +138,7 @@ window.addEventListener("keydown", (event) => {
     ArrowLeft: () => command("prev"), ArrowUp: () => command("prev"), PageUp: () => command("prev"),
     Home: () => command("first"),
     End: () => command("last"),
-    r: () => { startedAt = Date.now(); tick(); },
+    r: () => send({ type: "timer-reset" }), // 聴衆画面のタイマーも一緒に戻す
     "+": () => setNoteSize(noteSize + 2),
     "=": () => setNoteSize(noteSize + 2),
     "-": () => setNoteSize(noteSize - 2),
@@ -154,8 +164,12 @@ socket.onmessage = (event) => {
   if (message.type === "state") {
     state = message;
     render();
+    tick();
   } else if (message.type === "frame") {
     onFrame(message.data);
+  } else if (message.type === "timer") {
+    startedAt = message.startedAt;
+    tick();
   } else if (message.type === "reload") {
     loadDeck();
   }

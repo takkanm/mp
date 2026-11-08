@@ -29,5 +29,8 @@ body.presenter {
 #speaker-notes { flex: 1; min-height: 0; overflow: auto; line-height: 1.6; white-space: pre-wrap; }
 
 #elapsed { font: 600 34px Menlo, monospace; }
+#remaining, #slide-remaining { font: 600 24px Menlo, "Hiragino Sans", monospace; color: #9fc4ff; }
+:is(#remaining, #slide-remaining)[data-state="warn"] { color: #ffc861; }
+:is(#remaining, #slide-remaining)[data-state="over"] { color: #ff7a7a; }
 #clock { font: 20px Menlo, monospace; color: #98a1b3; }
 .hints { margin-left: auto; font-size: 13px; color: #6f7889; }

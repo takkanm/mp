@@ -264,6 +264,28 @@ class DeckTest < Minitest::Test
     assert_includes out, "<footer>F</footer>"
   end
 
+  def test_duration_formats
+    {
+      "20" => 1200, "0.5" => 30, "'20:00'" => 1200, "20:00" => 1200, "1:30" => 90, "20m" => 1200,
+      "20min" => 1200, "90s" => 90, "20分" => 1200, "20:00  # 発表時間" => 1200
+    }.each do |value, seconds|
+      assert_equal seconds, deck("---\nduration: #{value}\n---\n## A\n").duration, value
+    end
+  end
+
+  def test_duration_absent_or_invalid
+    assert_nil deck("## A\n").duration
+    assert_nil deck("---\nduration: soon\n---\n## A\n").duration
+    assert_nil deck("---\nduration: 0\n---\n## A\n").duration
+  end
+
+  def test_duration_in_comment_directive_and_json
+    d = deck("<!-- duration: 15 -->\n\n## A\n")
+    assert_equal 900, d.duration
+    assert_equal 900, d.to_h[:duration]
+    assert_empty d.slides[0][:notes]
+  end
+
   def test_size
     assert_equal [960, 720], deck("---\nsize: 4:3\n---\n## A\n").size
   end

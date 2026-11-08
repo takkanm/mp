@@ -95,6 +95,7 @@ theme: default        # default / dark / ./my-theme.css
 size: 16:9            # 16:9 / 4:3
 title: タイトル
 paginate: true
+duration: 20          # トークの想定時間(分)。"20:00" "90s" も可
 header: ヘッダー
 footer: フッター
 style: |
@@ -104,6 +105,13 @@ style: |
 <!-- class: lead -->             以降のスライドに適用
 <!-- _backgroundColor: black --> このスライドだけに適用(先頭に _)
 ```
+
+`duration` を指定すると、スライドを表示した時点からタイマーが動き、右下に「ページ番号 / 総枚数」「このページの残り」「全体の残り」を表示します(`paginate` のページ番号はタイマーの中に移ります)。
+
+- 1 ページの持ち時間は、全体の時間を枚数で均等に割った長さです(20 分で 10 枚なら 2 分)
+- ページごとに使った時間を積算するので、戻って再び開くと続きから数えます
+- 全体の残りは残り 2 分(短いトークでは全体の 2 割)、ページの残りは持ち時間の 2 割を切ると色が変わり、超過すると赤で超過時間を表示します
+デッキを保存して再読み込みしてもタイマーは続きます。発表者ビューにも残り時間が出て、`r` で両方をリセットできます。
 
 使えるディレクティブは `paginate` `header` `footer` `class` `color` `backgroundColor` `backgroundImage` `backgroundPosition` `backgroundRepeat` `backgroundSize` です。クラスには `lead`(中央寄せ)、`left`(左寄せ)、`right`(本文だけ右寄せ)、`invert`(配色反転)、`columns`(2 列)があります。
 
@@ -149,7 +157,7 @@ bundle exec exe/mp --presenter examples/demo.md
 | `Home` / `End` | 最初 / 最後 |
 | 数字 + `Enter` | そのページへ |
 | `Enter` | 台本のコマンドを実行 |
-| `r` | 経過時間をリセット |
+| `r` | 経過時間をリセット(`duration` のタイマーも戻す) |
 | `+` / `-` | ノートの文字サイズ |
 | `q` | 終了 |
 

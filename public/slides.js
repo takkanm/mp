@@ -20,6 +20,40 @@ const MpSlides = {
     return deck;
   },
 
+  // 残り時間。超過すると負になる
+  remaining(deck, startedAt, now = Date.now()) {
+    return deck.duration - Math.floor((now - startedAt) / 1000);
+  },
+
+  formatTime(seconds) {
+    const sign = seconds < 0 ? "+" : "";
+    const s = Math.abs(seconds);
+    const pad = (n) => String(n).padStart(2, "0");
+    const hours = Math.floor(s / 3600);
+    return `${sign}${hours ? `${hours}:${pad(Math.floor(s / 60) % 60)}` : pad(Math.floor(s / 60))}:${pad(s % 60)}`;
+  },
+
+  // 残り 2 分、短いトークでは全体の 2 割を切ったら注意を促す
+  timerState(deck, remaining) {
+    if (remaining < 0) return "over";
+    return remaining <= Math.min(120, deck.duration * 0.2) ? "warn" : "normal";
+  },
+
+  // 1 ページの持ち時間(秒)。全体の時間を枚数で均等に割る
+  slideBudget(deck, count) {
+    return deck.duration / count;
+  },
+
+  // そのページで使った時間を引いた残り。持ち時間の 2 割を切ったら注意を促す
+  slideRemaining(budget, spentMs) {
+    return Math.floor(budget - Math.floor(spentMs / 1000)); // 全体の残りと同じく経過秒で刻む
+  },
+
+  slideState(budget, remaining) {
+    if (remaining < 0) return "over";
+    return remaining <= budget * 0.2 ? "warn" : "normal";
+  },
+
   // `# <!-- fit --> 見出し` を横幅いっぱいにする
   fitHeadings(stage) {
     stage.querySelectorAll(".fit").forEach((heading) => {
