@@ -39,17 +39,35 @@ async function loadDeck() {
   show(Math.min(Number(location.hash.slice(1) || 1) - 1, slides.length - 1), { fragments: "none" });
 }
 
+// 開始前は数えない
 function spentOnCurrent(now = Date.now()) {
-  return (slideSpent.get(current) ?? 0) + (now - enteredAt);
+  return startedAt ? (slideSpent.get(current) ?? 0) + (now - enteredAt) : 0;
+}
+
+// 待っている表紙には持ち時間がない
+function slideTimed() {
+  return !(current === 0 && MpSlides.coverFirst(deck));
+}
+
+function slideBudget() {
+  return MpSlides.slideBudget(deck, MpSlides.timedSlideCount(deck));
+}
+
+// 表紙の次へ進んだら(表紙がなければ最初から)タイマーを始める
+function maybeStartTimer() {
+  if (deck?.duration && !startedAt && slideTimed() && events.readyState === WebSocket.OPEN) {
+    events.send(JSON.stringify({ type: "timer-start" }));
+  }
 }
 
 function renderTimer() {
   timer.hidden = !deck?.duration || !slides.length;
   if (timer.hidden) return;
   const total = MpSlides.remaining(deck, startedAt);
-  const budget = MpSlides.slideBudget(deck, slides.length);
+  const budget = slideBudget();
   const slide = MpSlides.slideRemaining(budget, spentOnCurrent());
   timer.querySelector(".timer-pages").textContent = `${current + 1} / ${slides.length}`;
+  timer.querySelector(".timer-slide").hidden = !slideTimed();
   timer.querySelector(".timer-slide b").textContent = MpSlides.formatTime(slide);
   timer.querySelector(".timer-slide").dataset.state = MpSlides.slideState(budget, slide);
   timer.querySelector(".timer-total b").textContent = MpSlides.formatTime(total);
@@ -61,6 +79,7 @@ function resetTimer(at) {
   slideSpent.clear();
   enteredAt = Date.now();
   renderTimer();
+  maybeStartTimer();
   sendState();
 }
 
@@ -100,7 +119,7 @@ function show(index, { fragments }) {
   slides[current]?.classList.remove("active");
   slides[current]?.querySelectorAll("iframe").forEach((frame) => frame.blur());
   if (index !== current) {
-    slideSpent.set(current, spentOnCurrent());
+    if (startedAt) slideSpent.set(current, spentOnCurrent());
     enteredAt = Date.now();
   }
   current = index;
@@ -111,6 +130,7 @@ function show(index, { fragments }) {
   mountEmbeds(slide);
   renderNotes();
   renderTimer();
+  maybeStartTimer();
   sendState();
 }
 
@@ -121,7 +141,9 @@ function sendState() {
   const terminal = currentTerminal();
   events.send(JSON.stringify({
     type: "state", slide: current, step, script: terminal?.script() ?? null, ready: terminal?.ready() ?? false,
-    slideSpent: spentOnCurrent(), sentAt: Date.now(), // 発表者ビューはここから経過を数える
+    // 発表者ビューはここから経過を数える
+    slideSpent: spentOnCurrent(), sentAt: Date.now(), running: !!startedAt,
+    slideTimed: slideTimed(), slideBudget: deck?.duration ? slideBudget() : null,
   }));
 }
 
@@ -336,7 +358,10 @@ const commands = {
 };
 
 const events = new WebSocket(`${wsBase}events?role=audience`);
-events.onopen = sendState;
+events.onopen = () => {
+  maybeStartTimer();
+  sendState();
+};
 events.onmessage = (event) => {
   const message = JSON.parse(event.data);
   if (message.type === "reload") loadDeck();

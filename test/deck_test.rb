@@ -286,6 +286,10 @@ class DeckTest < Minitest::Test
     assert_empty d.slides[0][:notes]
   end
 
+  def test_slide_kind_is_sent_to_browser
+    assert_equal %i[cover slide], deck("# T\n\n## A\n").to_h[:slides].map { _1[:kind] }
+  end
+
   def test_size
     assert_equal [960, 720], deck("---\nsize: 4:3\n---\n## A\n").size
   end

@@ -6,7 +6,7 @@ const FRAME_INTERVAL = 250;
 let deck = null;
 let state = { slide: 0, step: 0, script: null, ready: false };
 let digits = "";
-let startedAt = Date.now(); // サーバの開始時刻を受け取るまでの仮の値
+let startedAt = null; // 未開始。サーバから開始時刻が届く
 let noteSize = 26;
 let mirrorRunning = false;
 let mirrorSlide = null;
@@ -111,17 +111,19 @@ function onFrame(data) {
 }
 
 function tick() {
-  $("elapsed").textContent = MpSlides.formatTime(Math.floor((Date.now() - startedAt) / 1000));
+  $("elapsed").textContent = MpSlides.formatTime(MpSlides.elapsed(startedAt));
   $("clock").textContent = new Date().toLocaleTimeString("ja-JP", { hour: "2-digit", minute: "2-digit" });
-  $("remaining").hidden = $("slide-remaining").hidden = !deck?.duration;
+  $("remaining").hidden = !deck?.duration;
+  $("slide-remaining").hidden = !deck?.duration || state.slideTimed === false;
   if (!deck?.duration) return;
   const remaining = MpSlides.remaining(deck, startedAt);
   $("remaining").textContent = remaining < 0 ? `超過 ${MpSlides.formatTime(-remaining)}` : `残り ${MpSlides.formatTime(remaining)}`;
   $("remaining").dataset.state = MpSlides.timerState(deck, remaining);
 
   // 聴衆画面が送った使用時間に、送ってからの経過を足す
-  const budget = MpSlides.slideBudget(deck, deck.slides.length);
-  const slide = MpSlides.slideRemaining(budget, (state.slideSpent ?? 0) + (Date.now() - (state.sentAt ?? Date.now())));
+  const budget = state.slideBudget ?? MpSlides.slideBudget(deck, MpSlides.timedSlideCount(deck));
+  const running = state.running ? Date.now() - (state.sentAt ?? Date.now()) : 0;
+  const slide = MpSlides.slideRemaining(budget, (state.slideSpent ?? 0) + running);
   $("slide-remaining").textContent = `このページ ${slide < 0 ? `超過 ${MpSlides.formatTime(-slide)}` : MpSlides.formatTime(slide)}`;
   $("slide-remaining").dataset.state = MpSlides.slideState(budget, slide);
 }

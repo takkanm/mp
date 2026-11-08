@@ -22,7 +22,22 @@ const MpSlides = {
 
   // 残り時間。超過すると負になる
   remaining(deck, startedAt, now = Date.now()) {
-    return deck.duration - Math.floor((now - startedAt) / 1000);
+    return deck.duration - MpSlides.elapsed(startedAt, now);
+  },
+
+  // 経過秒。未開始(startedAt が null)なら 0
+  elapsed(startedAt, now = Date.now()) {
+    return startedAt ? Math.floor((now - startedAt) / 1000) : 0;
+  },
+
+  // 最初のスライドが表紙なら、表紙の次へ進むまでタイマーを始めない
+  coverFirst(deck) {
+    return deck.slides[0]?.kind === "cover";
+  },
+
+  // 持ち時間を割り当てるページ数(待っている表紙は除く)
+  timedSlideCount(deck) {
+    return Math.max(deck.slides.length - (MpSlides.coverFirst(deck) ? 1 : 0), 1);
   },
 
   formatTime(seconds) {

@@ -118,11 +118,17 @@ module Mp
     def deck_json
       deck = @deck.to_h
       embeds = deck[:embeds].transform_values { |embed| embed[:type] == "web" ? embed.merge(src: embed_url(embed[:src])) : embed }
-      @started_at ||= Time.now # 最初にスライドを表示した時刻からタイマーを始める
       deck.merge(embeds: embeds, themeCss: theme_css, startedAt: timer_start)
     end
 
-    def timer_start = (@started_at.to_f * 1000).round
+    # 先に開始していれば、その時刻を使い続ける
+    def start_timer
+      started = @lock.synchronize { @started_at.nil? && (@started_at = Time.now) }
+      broadcast(JSON.generate(type: "timer", startedAt: timer_start)) if started
+    end
+
+    # 未開始なら nil。開始は聴衆画面が表紙の次へ進んだときに知らせてくる
+    def timer_start = @started_at && (@started_at.to_f * 1000).round
 
     def embed_url(src)
       return src if src.empty? || src.match?(%r{\Ahttps?://}i)
@@ -214,9 +220,12 @@ module Mp
       case JSON.parse(message)["type"]
       when "quit" then @on_quit&.call
       when "open-presenter" then @on_open_presenter&.call
+      when "timer-start"
+        start_timer
       when "timer-reset"
-        @started_at = Time.now
-        broadcast(JSON.generate(type: "timer", startedAt: timer_start))
+        # 未開始に戻す。表紙以外にいれば聴衆画面がすぐに開始を送り直す
+        @started_at = nil
+        broadcast(JSON.generate(type: "timer", startedAt: nil))
       when "frame" then @on_frame_request&.call
       else broadcast(message, except: socket)
       end

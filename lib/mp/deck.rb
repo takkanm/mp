@@ -70,7 +70,7 @@ module Mp
         size: size,
         duration: duration,
         style: @globals["style"].to_s,
-        slides: @slides.map { _1.slice(:html, :notes) },
+        slides: @slides.map { _1.slice(:html, :notes, :kind) },
         embeds: @embeds.transform_values { _1.except(:cwd) }
       }
     end
